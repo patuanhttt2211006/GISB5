@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lab 5 - Polygon Interaction</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; }
+    .leaflet-popup-content { font-size: 16px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Khởi tạo bản đồ
+    const map = L.map('map').setView([10.762622, 106.660172], 13); // Tọa độ Sài Gòn
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(map);
+
+    // Hàm tạo màu ngẫu nhiên
+    function getRandomColor() {
+      return '#' + Math.floor(Math.random() * 16777215).toString(16);
+    }
+
+    // -------------------
+    // Bài 1: Polygon tĩnh
+    // -------------------
+    const polygon1 = L.polygon([
+      [10.77, 106.66],
+      [10.77, 106.68],
+      [10.76, 106.67]
+    ], { color: 'blue' }).addTo(map);
+
+    polygon1.on('click', function () {
+      polygon1.setStyle({ color: getRandomColor() });
+    });
+
+    // -------------------
+    // Bài 2: Polygon tam giác bằng click chuột
+    // -------------------
+    let trianglePoints = [];
+    let trianglePolygon = null;
+
+    map.on('click', function (e) {
+      if (trianglePoints.length < 3) {
+        trianglePoints.push([e.latlng.lat, e.latlng.lng]);
+
+        if (trianglePoints.length === 3) {
+          trianglePolygon = L.polygon(trianglePoints, { color: getRandomColor() }).addTo(map);
+
+          trianglePolygon.on('click', function () {
+            trianglePolygon.setStyle({ color: getRandomColor() });
+          });
+        }
+      }
+    });
+
+    // -------------------
+    // Bài 3: Vùng cấm bay và tọa độ ngoài polygon
+    // -------------------
+    const zonePolygon = L.polygon([
+      [10.765, 106.655],
+      [10.765, 106.675],
+      [10.755, 106.665]
+    ], { color: 'red' }).addTo(map);
+
+    map.on('click', function (e) {
+      if (trianglePoints.length < 3) return; // tránh xung đột với Bài 2
+
+      const point = e.latlng;
+      if (zonePolygon.getBounds().contains(point)) {
+        if (L.Polygon.prototype.isPrototypeOf(zonePolygon) &&
+            leafletPip.pointInLayer([point.lng, point.lat], zonePolygon).length > 0) {
+          L.popup()
+            .setLatLng(point)
+            .setContent("Vùng cấm bay")
+            .openOn(map);
+        }
+      } else {
+        L.popup()
+          .setLatLng(point)
+          .setContent(`Tọa độ: ${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`)
+          .openOn(map);
+      }
+    });
+
+  </script>
+
+  <!-- Thư viện phụ để kiểm tra điểm có nằm trong polygon (cho Bài 3) -->
+  <script src="https://unpkg.com/leaflet-pip/leaflet-pip.min.js"></script>
+</body>
+</html>
